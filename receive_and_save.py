@@ -3,8 +3,27 @@ import sys
 import time
 from LoRaRX import LoRa  # import LoRa module configured in LoRa.py
 
-# begin receiving loop
-with open("data.txt", "a") as file:
+# Define the headers
+headers = "PM2.5 PM10.0 UV Ambient_Light Date Time\n"
+
+# Function to write headers if the file is empty or doesn't contain them
+def write_headers_if_needed(file_path, headers):
+    if not os.path.exists(file_path):
+        with open(file_path, "w") as file:
+            file.write(headers)
+    else:
+        with open(file_path, "r") as file:
+            first_line = file.readline().strip()
+            if first_line != headers.strip():
+                with open(file_path, "w") as file:
+                    file.write(headers)
+
+# Check and write headers if needed
+file_path = "data.txt"
+write_headers_if_needed(file_path, headers)
+
+# Begin receiving loop
+with open(file_path, "a") as file:
     while True:
         try:
             # Request for receiving new LoRa packet
@@ -30,8 +49,10 @@ with open("data.txt", "a") as file:
 
             # Show received status in case CRC or header error occur
             status = LoRa.status()
-            if status == LoRa.STATUS_CRC_ERR: print("CRC error")
-            elif status == LoRa.STATUS_HEADER_ERR: print("Packet header error")
+            if status == LoRa.STATUS_CRC_ERR: 
+                print("CRC error")
+            elif status == LoRa.STATUS_HEADER_ERR: 
+                print("Packet header error")
 
         except Exception as e:
             print(f"An error occurred: {e}")
