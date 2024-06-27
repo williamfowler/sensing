@@ -12,7 +12,7 @@ import busio
 import adafruit_ltr390 # uv sensor
 from digitalio import DigitalInOut, Direction, Pull
 from adafruit_pm25.i2c import PM25_I2C # air quality sensor
-from LoRa import LoRa # import LoRa module configured in LoRa.py
+from LoRaTX import LoRa # import LoRa module configured in LoRa.py
 from datetime import datetime
 
 reset_pin = None
@@ -33,32 +33,33 @@ print("Found uv sensor")
 while True:
     time.sleep(1) # can change frequency of reading
 
+    to_transmit = {}
+
     # collect reading from aq sensor
     try:
         aqdata = aq_sensor.read()
-        aq_pm25 = aqdata["pm25 standard"]
-        aq_pm100 =  aqdata["pm100 standard"]
+        to_transmit['aq_pm25'] = aqdata["pm25 standard"]
+        to_transmit['aq_pm100'] =  aqdata["pm100 standard"]
     except RuntimeError:
         print("Could not read air quality sensor")
         continue
 
     # collect reading from uv sensor
     try:
-        uv_value = uv_sensor.uvs
-        ambient_light = uv_sensor.light
+        to_transmit['uv_value'] = uv_sensor.uvs
+        to_transmit['ambient_light'] = uv_sensor.light
     except RuntimeError:
         print("Could not read uv sensor")
         continue
 
-    # transmit data over LoRa
-    to_transmit = [aq_pm25, aq_pm100, uv_value, ambient_light]
     # convert each character to integer representation (Unicdoe value)
-    for value in to_transmit:
-        message = str(value) # convert to string
-        message = message.strip() + "\0 " # add sentinel because converting from number
+    for metric in to_transmit:
+        print(metric)
+        message = str(to_transmit[metric]) # convert to string
+        message = message.strip() + " " # add sentinel because converting from number
         messageList = list(message) # get list of characters
         for i in range(len(messageList)):
-            messageList[i] = ord(messageList[i]) # convert to int
+            messageList[i] = ord(messageList[i]) # convert to unicode value
 
         # transmit the values one at a time
         LoRa.beginPacket()
