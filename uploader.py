@@ -17,7 +17,7 @@ import pandas as pd
 
 # Read data into a data_frame
 df = pd.read_csv('data.txt', sep=' ')
- 
+
 # set these fields to the current info for your CHORDS account
 CHORDS_url = "http://ec2-100-29-142-65.compute-1.amazonaws.com" # no trailing /
 instrument_id = 1
@@ -38,8 +38,23 @@ def send_request(row):
     print(response)
 
 
-# iterate through data_frame
+# Check if data_archive.txt exists
+archive_exists = os.path.isfile('data_archive.txt')
+
+if archive_exists:
+    # Read the archive file
+    archive_df = pd.read_csv('data_archive.txt', sep=' ')
+    # Check if column names are the same
+    if not df.columns.equals(archive_df.columns):
+        raise ValueError("Column names do not match between data.txt and data_archive.txt")
+    # Append without column names
+    df.to_csv('data_archive.txt', mode='a', sep=' ', header=False, index=False)
+else:
+    # Write data to archive with column names
+    df.to_csv('data_archive.txt', mode='w', sep=' ', header=True, index=False)
+
+# Iterate through data_frame and send requests
 df.apply(send_request, axis=1)
 
-# when finished, delete the data so we don't sent duplicates
+# When finished, delete the data so we don't send duplicates
 os.remove("data.txt")
